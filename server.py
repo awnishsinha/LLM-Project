@@ -11,30 +11,37 @@ from llama_index.core.node_parser import  SentenceSplitter
 
 load_dotenv()
 
-# Create a RAG tool using LlamaIndex
-documents = SimpleDirectoryReader("data").load_data() #loading data from the data directory
+def load_or_create_index():
+    if os.path.exists("storage"):
+        print("Loading index from storage...")
+        storage_context = StorageContext.from_defaults(persist_dir="storage") # creating a storage context from the persisted index in the storage directory
+        index = load_index_from_storage(storage_context) # loading the index from storage if it exists
+    else:
+        print("Creating new index...")
+        documents = SimpleDirectoryReader("data").load_data()
+        index = VectorStoreIndex.from_documents(documents) # creating an index from the documents
+        index.storage_context.persist("storage") # persisting the index to storage for future use
+    return index
 
+
+index=load_or_create_index()
+
+# We can use the SentenceSplitter to split the documents into sentences and create nodes from them
 sentence=SentenceSplitter(
     chunk_size=1024,
     chunk_overlap=20
 )
 
-nodes=sentence.get_nodes_from_documents(documents) # splitting the documents into sentences and creating nodes from them
-print("Total chunks:", len(nodes))
+# nodes=sentence.get_nodes_from_documents(documents) # splitting the documents into sentences and creating nodes from them
+# print("Total chunks:", len(nodes))
 
-for i, node in enumerate(nodes[:5]):
-    print("\n======================")
-    print("CHUNK:", i + 1)
-    print("======================")
-    print(node.text[:1000])
+# for i, node in enumerate(nodes[:5]):
+#     print("\n======================")
+#     print("CHUNK:", i + 1)
+#     print("======================")
+#     print(node.text[:1000])
     
-index = VectorStoreIndex.from_documents(documents) # creating an index from the documents
-#storing the index in the storage context for later retrieval
-index.storage_context.persist("storage")
-# Later, we can load the index from storage and create a query engine
-storage_context = StorageContext.from_defaults(persist_dir="storage")
-#loading the index from storage and creating a query engine to query the index
-index = load_index_from_storage(storage_context)
+
 query_engine = index.as_query_engine(response_mode="tree_summarize") # creating a query engine from the index
 
 # Define a simple calculator tool
@@ -54,15 +61,39 @@ agent = FunctionAgent(
     system_prompt="""You are a helpful assistant that can perform calculations
     and search through documents to answer questions.""",)
 
-ctx=Context(agent)
+
 
 # Now we can ask questions about the documents or do calculations
 async def main():
-    response = await agent.run(
-        "Why financial losses happened in the case?",
+    ctx=Context(agent)
+    
+    response1 = await agent.run(
+        user_msg="Hi, my name is Awnish.",
         ctx=ctx
     )
-    print(response)
+    print("Response 1:")
+    print(response1)
+
+    response2 = await agent.run(
+        user_msg="What is my name?",
+        ctx=ctx
+    )
+    print("\nResponse 2:")
+    print(response2)
+
+    response3 = await agent.run(
+        user_msg="Why financial losses happened in the case?",
+        ctx=ctx
+    )
+    print("\nResponse 3:")
+    print(response3)
+
+    response4 = await agent.run(
+        user_msg="What is 1234 * 4567?",
+        ctx=ctx
+    )
+    print("\nResponse 4:")
+    print(response4)
 
     # Run the agent
 if __name__ == "__main__":
