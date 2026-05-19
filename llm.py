@@ -1,13 +1,24 @@
 from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
-
+from llama_index.core.llms import ChatMessage
 load_dotenv()
+llm= OpenAI()
+# response = llm.complete("William Shakespeare is ") # this is getting a completion from the OpenAI LLM using the prompt "William Shakespeare is "
+# print(response)
 
-response = OpenAI().complete("William Shakespeare is ") # this is getting a completion from the OpenAI LLM using the prompt "William Shakespeare is "
-print(response)
-
-handle = OpenAI().stream_complete("William Shakespeare is ",) # this is getting a streaming completion from the OpenAI LLM using the prompt "Write a short biography of William Shakespeare."
+# handle = llm.stream_complete("William Shakespeare is ",) # this is getting a streaming completion from the OpenAI LLM using the prompt "Write a short biography of William Shakespeare."
 
 
-for token in handle:
-    print(token.delta, end="", flush=True)
+# for token in handle:
+#     print(token.delta, end="", flush=True)
+
+
+# ChatInterface
+
+messages = [
+    ChatMessage(role="system", content="You are a helpful assistant."),
+    ChatMessage(role="user", content="Tell me a joke."),
+]
+chat_response = llm.chat(messages)
+
+print(chat_response)
