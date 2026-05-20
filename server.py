@@ -7,6 +7,8 @@ import os
 from llama_index.core import StorageContext, load_index_from_storage
 from llama_index.core.workflow import Context
 from llama_index.core.node_parser import  SentenceSplitter
+from networkx import nodes
+from pageWiseChunking import load_pdf_page_wise
 
 
 load_dotenv()
@@ -18,7 +20,21 @@ def load_or_create_index():
         index = load_index_from_storage(storage_context) # loading the index from storage if it exists
     else:
         print("Creating new index...")
-        documents = SimpleDirectoryReader("data").load_data()
+        documents = load_pdf_page_wise(r"C:\Users\Xaira\MGC LLC\Test File 2 OC 673\Affidavits\25 09 29 1st Affidavit of Lisa Ong")  # Load PDF documents page-wise
+        # We can use the SentenceSplitter to split the documents into sentences and create nodes from them
+        sentence=SentenceSplitter(
+        chunk_size=1024,
+        chunk_overlap=20
+        )
+
+        nodes=sentence.get_nodes_from_documents(documents) # splitting the documents into sentences and creating nodes from them
+        print("Total chunks:", len(nodes))
+
+        for i, node in enumerate(nodes[:5]):
+            print("\n======================")
+            print("CHUNK:", i + 1)
+            print("======================")
+            print(node.text[:1000])
         index = VectorStoreIndex.from_documents(documents) # creating an index from the documents
         index.storage_context.persist("storage") # persisting the index to storage for future use
     return index
@@ -26,20 +42,7 @@ def load_or_create_index():
 
 index=load_or_create_index()
 
-# We can use the SentenceSplitter to split the documents into sentences and create nodes from them
-sentence=SentenceSplitter(
-    chunk_size=1024,
-    chunk_overlap=20
-)
 
-# nodes=sentence.get_nodes_from_documents(documents) # splitting the documents into sentences and creating nodes from them
-# print("Total chunks:", len(nodes))
-
-# for i, node in enumerate(nodes[:5]):
-#     print("\n======================")
-#     print("CHUNK:", i + 1)
-#     print("======================")
-#     print(node.text[:1000])
     
 
 query_engine = index.as_query_engine(response_mode="tree_summarize") # creating a query engine from the index
